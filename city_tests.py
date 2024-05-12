@@ -99,7 +99,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         tmp = test_layer(graph, r, usual_results, points, False)
         while len(tmp.errors) < 900:
             print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
-            tmp = test_layer(graph, r, usual_results, points, False)
+            tmp = test_layer(graph, r, usual_results, points, True)
         result.points_results.append(tmp)
         if tmp.alpha > 0.6:
             break
