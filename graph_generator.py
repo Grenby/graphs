@@ -119,18 +119,21 @@ def build_center_graph(
         cluster_to_bridge_points: dict[int, list[int]],
         cluster_to_neighboring_cluster: dict[int, list[int]],
         p: float = 1.0,
-        use_all_point: bool = True) -> nx.Graph:
+        use_all_point: bool = True,
+        has_coordinates: bool = True) -> nx.Graph:
     """
         строим граф центройд по комьюнити для графа G
     """
     centers = {}
     X = nx.Graph()
 
-    for cls, d in enumerate(communities):#, desc='создание центройд', total=len(communities)):
+    for cls, d in enumerate(communities):  # , desc='создание центройд', total=len(communities)):
         gc = communities_subgraph[cls]
-        _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
-                                           gc.nodes(data=True)}
-        # _p: dict[int, dict[int, float]] = dict(nx.all_pairs_dijkstra_path_length(gc, weight='length'))
+        if has_coordinates:
+            _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
+                                               gc.nodes(data=True)}
+        else:
+            _p: dict[int, dict[int, float]] = dict(nx.all_pairs_dijkstra_path_length(gc, weight='length'))
 
         if use_all_point:
             dist = {u: get_path_len(_p[u], communities, cls, p) for u in _p}
@@ -150,7 +153,10 @@ def build_center_graph(
 
     for u, d in X.nodes(data=True):
         for v in cluster_to_neighboring_cluster[d['cluster']]:
-            path_len = get_dist(d, X.nodes[centers[v]])
+            if has_coordinates:
+                path_len = get_dist(d, X.nodes[centers[v]])
+            else:
+                path_len = nx.dijkstra_path(graph, u, v)
             X.add_edge(u, centers[v], length=path_len)
     return X
 
@@ -195,7 +201,9 @@ def get_node_for_initial_graph(H: nx.Graph):
                 return node_from, node_to
         path_len = path_len // 3 * 2
 
-def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: bool = True, communities = None ) -> GraphLayer:
+
+def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: bool = True, communities=None,
+                   has_coordinates: bool = True) -> GraphLayer:
     if communities is None:
         communities = resolve_communities(H, resolution)
     communities_subgraph = generate_communities_subgraph(H, communities)
@@ -208,7 +216,8 @@ def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: 
         cluster_to_bridge_points=cluster_to_bridge_points,
         cluster_to_neighboring_cluster=cluster_to_neighboring_clusters,
         p=p,
-        use_all_point=use_all_point
+        use_all_point=use_all_point,
+        has_coordinates=has_coordinates
     )
     cluster_to_centers = get_cluster_to_centers(centroids_graph)
 
@@ -223,6 +232,3 @@ def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: 
         centroids_graph
     )
     return layer
-
-
-

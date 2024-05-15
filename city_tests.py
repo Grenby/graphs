@@ -15,7 +15,7 @@ def test_layer(
         points: list[list[int, int]],
         add_neighbour_cluster=True
 ) -> CentroidResult:
-    layer = generate_layer(H, resolution)
+    layer = generate_layer(H, resolution, has_coordinates=False)
 
     result = CentroidResult(
         resolution,
@@ -93,7 +93,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
 
     usual_results = [0, []]
     start_time = time.time()
-    for node_from, node_to in points:
+    for node_from, node_to in tqdm(points):
         usual_path = nx.single_source_dijkstra(graph, node_from, node_to, weight='length')
         usual_results[1].append(usual_path[0])
     end_time = time.time()
@@ -131,8 +131,9 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
     args = [
         {'H': graph, 'resolution': r, 'usual_result': usual_results, 'points': points, 'add_neighbour_cluster': False}
         for r in resolutions]
+    print('start')
     start_time = time.time()
-    with Pool(8) as p:
+    with Pool(4) as p:
         tmp = p.map(func, args)
     end_time = time.time()
     print(end_time - start_time)
