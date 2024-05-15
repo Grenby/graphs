@@ -156,7 +156,7 @@ def build_center_graph(
             if has_coordinates:
                 path_len = get_dist(d, X.nodes[centers[v]])
             else:
-                path_len = nx.dijkstra_path(graph, u, v)
+                path_len = nx.dijkstra_path_length(graph, u, v)
             X.add_edge(u, centers[v], length=path_len)
     return X
 

@@ -53,7 +53,7 @@ def test_path(
     try:
         my_path = find_path(layer, point_from, point_to, add_neighbour_cluster)
     except Exception as msg:
-        print(msg)
+        print('56 {}'.format(msg))
         return -1
     return my_path[0]
 
@@ -89,7 +89,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
     resolutions += [i for i in range(1000, 10000, 100)]
 
     if points is None:
-        N: int = 1000
+        N: int = 10
         points = [get_node_for_initial_graph_v2(graph) for i in trange(N, desc='generate points')]
 
     usual_results = [0, []]
@@ -120,9 +120,9 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
     #
     for r in tqdm(resolutions, desc='test resolutions:'):
         tmp = test_layer(graph, r, usual_results, points, False)
-        while len(tmp.errors) < 900:
-            print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
-            tmp = test_layer(graph, r, usual_results, points, True)
+        # while len(tmp.errors) < 900:
+        #     print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
+        #     tmp = test_layer(graph, r, usual_results, points, True)
         result.points_results.append(tmp)
         # if tmp.alpha > 0.6:
         #     break

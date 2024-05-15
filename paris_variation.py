@@ -5,7 +5,7 @@ import city_tests
 from graph_generator import get_graph, get_node_for_initial_graph
 
 if __name__ == '__main__':
-    H = get_graph('R71525')
+    H = get_graph('R2555133')
     points = [get_node_for_initial_graph(H) for i in trange(1000, desc='generate points')]
 
     ps = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009,
@@ -18,8 +18,8 @@ if __name__ == '__main__':
     # 0.0004, 0.0005, 0.0006, 0.0007, 0.0008
     # 0.0009, 0.001, 0.0011, 0.0013, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0019
     r = []
-    for p in [0.0019]:
+    for p in [0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0011, 0.0013, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0019]:
         rad = round(len(H.nodes()) * p)
         G = betta_variation.variation(H, rad)
         k = round(betta_variation.get_density(G) * 10000) / 10000
-        r.append(city_tests.test_graph(G, f'PARIS_{k}', 'R71525', points=points))
+        r.append(city_tests.test_graph(G, f'MSK_{k}', 'R71525', points=points))
