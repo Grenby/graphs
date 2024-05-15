@@ -52,7 +52,8 @@ def test_path(
 ) -> float:
     try:
         my_path = find_path(layer, point_from, point_to, add_neighbour_cluster)
-    except:
+    except Exception as msg:
+        print(msg)
         return -1
     return my_path[0]
 
@@ -107,39 +108,39 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         nodes=len(graph.nodes),
         edges=len(graph.edges)
     )
-    result_c = CityResult(
-        name=name,
-        name_suffix='',
-        city_id=city_id,
-        nodes=len(graph.nodes),
-        edges=len(graph.edges)
-    )
+    # result_c = CityResult(
+    #     name=name,
+    #     name_suffix='',
+    #     city_id=city_id,
+    #     nodes=len(graph.nodes),
+    #     edges=len(graph.edges)
+    # )
 
     # start_time = time.time()
     #
-    # for r in tqdm(resolutions, desc='test resolutions:'):
-    #     tmp = test_layer(graph, r, usual_results, points, False)
-    #     # while len(tmp.errors) < 900:
-    #     #     print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
-    #     #     tmp = test_layer(graph, r, usual_results, points, True)
-    #     result.points_results.append(tmp)
-    #     # if tmp.alpha > 0.6:
-    #     #     break
+    for r in tqdm(resolutions, desc='test resolutions:'):
+        tmp = test_layer(graph, r, usual_results, points, False)
+        while len(tmp.errors) < 900:
+            print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
+            tmp = test_layer(graph, r, usual_results, points, True)
+        result.points_results.append(tmp)
+        # if tmp.alpha > 0.6:
+        #     break
     # end_time = time.time()
     # print('usual' + str(end_time - start_time))
 
-    args = [
-        {'H': graph, 'resolution': r, 'usual_result': usual_results, 'points': points, 'add_neighbour_cluster': False}
-        for r in resolutions]
-    print('start')
-    start_time = time.time()
-    with Pool(4) as p:
-        tmp = p.map(func, args)
-    end_time = time.time()
-    print(end_time - start_time)
+    # args = [
+    #     {'H': graph, 'resolution': r, 'usual_result': usual_results, 'points': points, 'add_neighbour_cluster': False}
+    #     for r in resolutions]
+    # print('start')
+    # start_time = time.time()
+    # with Pool(4) as p:
+    #     tmp = p.map(func, args)
+    # end_time = time.time()
+    # print(end_time - start_time)
 
-    for t in tmp:
-        result_c.points_results.append(t)
-    result_c.save()
+    # for t in tmp:
+    #     result_c.points_results.append(t)
+    result.save()
 
-    return result_c
+    return result
