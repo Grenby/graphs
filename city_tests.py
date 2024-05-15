@@ -63,6 +63,19 @@ def test_city(name: str, city_id: str) -> CityResult:
     return test_graph(H, name, city_id)
 
 
+from multiprocessing import Pool
+from functools import partial
+
+GRAPH: nx.Graph
+USUAL_RESULTS: list[int, list[float]]
+POINTS: list[list[int, int]]
+
+
+def func(args):
+    # print(args)
+    return test_layer(**args)
+
+
 def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) -> CityResult:
     resolutions = [i for i in range(1, 10,
                                     1)]
@@ -94,14 +107,38 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         nodes=len(graph.nodes),
         edges=len(graph.edges)
     )
+    result_c = CityResult(
+        name=name,
+        name_suffix='',
+        city_id=city_id,
+        nodes=len(graph.nodes),
+        edges=len(graph.edges)
+    )
 
-    for r in tqdm(resolutions, desc='test resolutions:'):
-        tmp = test_layer(graph, r, usual_results, points, False)
-        while len(tmp.errors) < 900:
-            print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
-            tmp = test_layer(graph, r, usual_results, points, True)
-        result.points_results.append(tmp)
-        if tmp.alpha > 0.6:
-            break
-    result.save()
-    return result
+    # start_time = time.time()
+    #
+    # for r in tqdm(resolutions, desc='test resolutions:'):
+    #     tmp = test_layer(graph, r, usual_results, points, False)
+    #     # while len(tmp.errors) < 900:
+    #     #     print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
+    #     #     tmp = test_layer(graph, r, usual_results, points, True)
+    #     result.points_results.append(tmp)
+    #     # if tmp.alpha > 0.6:
+    #     #     break
+    # end_time = time.time()
+    # print('usual' + str(end_time - start_time))
+
+    args = [
+        {'H': graph, 'resolution': r, 'usual_result': usual_results, 'points': points, 'add_neighbour_cluster': False}
+        for r in resolutions]
+    start_time = time.time()
+    with Pool(8) as p:
+        tmp = p.map(func, args)
+    end_time = time.time()
+    print(end_time - start_time)
+
+    for t in tmp:
+        result_c.points_results.append(t)
+    result_c.save()
+
+    return result_c
