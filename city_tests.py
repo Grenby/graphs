@@ -80,10 +80,10 @@ def func(args):
 def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) -> CityResult:
     resolutions = [i for i in range(1, 10,
                                     1)]
-    resolutions += [i for i in range(10, 100,
-                                     5)]
-    resolutions += [i for i in range(100, 500,
-                                     10)]
+    # resolutions += [i for i in range(10, 100,
+    #                                  5)]
+    # resolutions += [i for i in range(100, 500,
+    #                                  10)]
     # resolutions += [i for i in range(500, 1000,
     #                                  10)]
     # resolutions += [i for i in range(1000, 10000, 100)]

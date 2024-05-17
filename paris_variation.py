@@ -5,7 +5,7 @@ import city_tests
 from graph_generator import get_graph, get_node_for_initial_graph
 
 if __name__ == '__main__':
-    H = get_graph('R71525')
+    H = get_graph('R6564910')
     points = [get_node_for_initial_graph(H) for i in trange(100, desc='generate points')]
 
     ps = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009,
@@ -19,18 +19,22 @@ if __name__ == '__main__':
     # 0.0009, 0.001, 0.0011, 0.0013, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0019
     r = []
     k = betta_variation.get_density(H)
-    p = 0.0001
+    p = 0.01
     G = H
+    r.append(city_tests.test_graph(G, f'EKB_{round(betta_variation.get_density(G) * 10000) / 10000}', 'R6564910',
+                                   points=points))
     while k < 0.99:
-        r.append(city_tests.test_graph(G, f'PARIS_{round(betta_variation.get_density(G) * 10000) / 10000}', 'R71525', points=points))
         rad = round(len(H.nodes()) * p)
-        G = betta_variation.variation(H, rad)
-        kk = betta_variation.variation(G)
-        while k + 0.1 > kk:
+        kk = betta_variation.get_density(G)
+        while k + 0.05 > kk:
+            p += 0.01
+            rad = round(len(H.nodes()) * p)
             G = betta_variation.variation(H, rad)
-            kk = betta_variation.variation(G)
+            kk = betta_variation.get_density(G)
         k = kk
         print(kk)
+        r.append(city_tests.test_graph(G, f'EKB_{round(betta_variation.get_density(G) * 10000) / 10000}', 'R6564910',
+                                       points=points))
 
     # for p in ps:
     #     rad = round(len(H.nodes()) * p)
