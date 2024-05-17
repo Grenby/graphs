@@ -13,7 +13,6 @@ def get_dist(du, dv) -> float:
     d = d ** 0.5 / 360 * 2 * np.pi * 6371.01 * 1000
     return d
 
-
 def extract_cluster_subgraph(graph: nx.Graph, cluster_number: int) -> nx.Graph:
     nodes_to_keep = [node for node, data in graph.nodes(data=True) if data['cluster'] == cluster_number]
     return graph.subgraph(nodes_to_keep)
@@ -42,6 +41,7 @@ def get_graph(city_id: str = 'R2555133') -> nx.Graph:
 
 
 def resolve_communities(H: nx.Graph, r: float = 20) -> list[set[int]]:
+    print('generate communities')
     communities = nx.community.louvain_communities(H,
                                                    seed=1534,
                                                    weight='length',
@@ -127,7 +127,7 @@ def build_center_graph(
     centers = {}
     X = nx.Graph()
 
-    for cls, d in enumerate(communities):  # , desc='создание центройд', total=len(communities)):
+    for cls, d in tqdm(enumerate(communities), desc = 'generate centers'):  # , desc='создание центройд', total=len(communities)):
         gc = communities_subgraph[cls]
         if has_coordinates:
             _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
@@ -151,7 +151,7 @@ def build_center_graph(
         X.add_node(min_node, **du)
         centers[cls] = min_node
 
-    for u, d in X.nodes(data=True):
+    for u, d in tqdm(X.nodes(data=True), desc = 'generate roads'):
         for v in cluster_to_neighboring_cluster[d['cluster']]:
             if has_coordinates:
                 path_len = get_dist(d, X.nodes[centers[v]])

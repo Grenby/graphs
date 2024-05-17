@@ -1,8 +1,10 @@
 import time
 
 import networkx as nx
+import numpy as np
 from tqdm import tqdm, trange
 
+import graph_generator
 from common import GraphLayer, CentroidResult, CityResult
 from graph_generator import generate_layer, get_graph, get_node_for_initial_graph, get_node_for_initial_graph_v2
 from pfa import find_path
@@ -13,9 +15,10 @@ def test_layer(
         resolution: float,
         usual_result: list[int, list[float]],
         points: list[list[int, int]],
-        add_neighbour_cluster=True
+        add_neighbour_cluster=True,
+        communities=None
 ) -> CentroidResult:
-    layer = generate_layer(H, resolution, has_coordinates=True)
+    layer = generate_layer(H, resolution, has_coordinates=False, communities=communities)
 
     result = CentroidResult(
         resolution,
@@ -78,11 +81,11 @@ def func(args):
 
 
 def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) -> CityResult:
-    resolutions = [i for i in range(1, 10,
-                                    1)]
+    # resolutions = [i for i in range(1, 10,
+    #                                 1)]
     # resolutions += [i for i in range(10, 100,
     #                                  5)]
-    # resolutions += [i for i in range(100, 500,
+    # resolutions += [i for i in range(100, 500,10)]
     #                                  10)]
     # resolutions += [i for i in range(500, 1000,
     #                                  10)]
@@ -100,7 +103,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
     end_time = time.time()
     usual_time = end_time - start_time
     usual_results[0] = usual_time
-    # print(usual_time / 1000000)
+
     result = CityResult(
         name=name,
         name_suffix='',
@@ -108,39 +111,62 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         nodes=len(graph.nodes),
         edges=len(graph.edges)
     )
-    # result_c = CityResult(
-    #     name=name,
-    #     name_suffix='',
-    #     city_id=city_id,
-    #     nodes=len(graph.nodes),
-    #     edges=len(graph.edges)
-    # )
-
-    # start_time = time.time()
-    #
+    resolutions = []
     for r in tqdm(resolutions, desc='test resolutions:'):
         tmp = test_layer(graph, r, usual_results, points, False)
-        # while len(tmp.errors) < 900:
-        #     print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
-        #     tmp = test_layer(graph, r, usual_results, points, True)
         result.points_results.append(tmp)
-        if tmp.alpha > 0.6:
-            break
-    # end_time = time.time()
-    # print('usual' + str(end_time - start_time))
 
-    # args = [
-    #     {'H': graph, 'resolution': r, 'usual_result': usual_results, 'points': points, 'add_neighbour_cluster': False}
-    #     for r in resolutions]
-    # print('start')
-    # start_time = time.time()
-    # with Pool(4) as p:
-    #     tmp = p.map(func, args)
-    # end_time = time.time()
-    # print(end_time - start_time)
+    result.save()
 
-    # for t in tmp:
-    #     result_c.points_results.append(t)
+    return result
+
+
+def test_graph_dynamic(graph: nx.Graph, name: str, city_id: str, points: list = None) -> CityResult:
+    if points is None:
+        N: int = 100
+        points = [get_node_for_initial_graph_v2(graph) for i in trange(N, desc='generate points')]
+
+    usual_results = [0, []]
+    start_time = time.time()
+    # for node_from, node_to in tqdm(points):
+    #     usual_path = nx.single_source_dijkstra(graph, node_from, node_to, weight='length')
+    #     usual_results[1].append(usual_path[0])
+    end_time = time.time()
+    usual_time = end_time - start_time
+    usual_results[0] = usual_time
+
+    result = CityResult(
+        name=name,
+        name_suffix='',
+        city_id=city_id,
+        nodes=len(graph.nodes),
+        edges=len(graph.edges)
+    )
+
+    right_resolution = 20
+    left_resolution = 1
+    c_r = graph_generator.resolve_communities(graph, right_resolution)
+    a_r = len(c_r) / len(graph.nodes)
+
+    c_l = graph_generator.resolve_communities(graph, left_resolution)
+    a_l = len(c_l) / len(graph.nodes)
+
+    a = a_l
+    a_c = c_l
+    new_resolution = 0
+    print('start')
+    while abs(a - 0.4) > 0.01:
+        new_resolution = (a_r + a_l) / 2
+        a_c = graph_generator.resolve_communities(graph, new_resolution)
+        a = len(a_c) / len(graph.nodes)
+        if a > 0.4:
+            right_resolution = new_resolution
+        else:
+            left_resolution = new_resolution
+        print(new_resolution)
+    print(new_resolution)
+
+    result.points_results.append(test_layer(graph, new_resolution, usual_results, points, False, communities=a_c))
     result.save()
 
     return result
