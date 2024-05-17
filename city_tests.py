@@ -15,7 +15,7 @@ def test_layer(
         points: list[list[int, int]],
         add_neighbour_cluster=True
 ) -> CentroidResult:
-    layer = generate_layer(H, resolution, has_coordinates=False)
+    layer = generate_layer(H, resolution, has_coordinates=True)
 
     result = CentroidResult(
         resolution,
@@ -84,12 +84,12 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
                                      5)]
     resolutions += [i for i in range(100, 500,
                                      10)]
-    resolutions += [i for i in range(500, 1000,
-                                     10)]
-    resolutions += [i for i in range(1000, 10000, 100)]
+    # resolutions += [i for i in range(500, 1000,
+    #                                  10)]
+    # resolutions += [i for i in range(1000, 10000, 100)]
 
     if points is None:
-        N: int = 10
+        N: int = 100
         points = [get_node_for_initial_graph_v2(graph) for i in trange(N, desc='generate points')]
 
     usual_results = [0, []]
@@ -124,8 +124,8 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         #     print('fot graph ' + name + ' resolution' + str(r) + ' alpha' + str(tmp.alpha) + ' not found enough data')
         #     tmp = test_layer(graph, r, usual_results, points, True)
         result.points_results.append(tmp)
-        # if tmp.alpha > 0.6:
-        #     break
+        if tmp.alpha > 0.6:
+            break
     # end_time = time.time()
     # print('usual' + str(end_time - start_time))
 
