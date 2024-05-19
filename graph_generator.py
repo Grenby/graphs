@@ -206,13 +206,12 @@ def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: 
                    has_coordinates: bool = True) -> GraphLayer:
     if communities is None:
         communities = resolve_communities(H, resolution)
-    communities_subgraph = generate_communities_subgraph(H, communities)
     cluster_to_neighboring_clusters = get_cluster_to_neighboring_clusters(H)
     cluster_to_bridge_points = get_cluster_to_bridge_points(H)
     centroids_graph = build_center_graph(
         graph=H,
         communities=communities,
-        communities_subgraph=communities_subgraph,
+        communities_subgraph=generate_communities_subgraph(H, communities),
         cluster_to_bridge_points=cluster_to_bridge_points,
         cluster_to_neighboring_cluster=cluster_to_neighboring_clusters,
         p=p,
@@ -225,7 +224,6 @@ def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: 
         H,
         resolution,
         communities,
-        communities_subgraph,
         cluster_to_neighboring_clusters,
         cluster_to_bridge_points,
         cluster_to_centers,

@@ -50,7 +50,6 @@ class GraphLayer:
                  graph: nx.Graph,
                  resolution: float,
                  communities: list[set[int]],
-                 sub_graphs: list[nx.Graph],
                  cluster_to_neighboring_cluster: dict[int, list[int] | tuple[int]],
                  cluster_to_bridge_points: dict[int, list[int] | tuple[int]],
                  cluster_to_center: dict[int, int],
@@ -60,7 +59,6 @@ class GraphLayer:
         self.cluster_to_bridge_points = cluster_to_bridge_points
         self.cluster_to_neighboring_cluster = cluster_to_neighboring_cluster
         self.communities = communities
-        self.sub_graphs = sub_graphs
         self.centroids_graph = centroids_graph
         self.resolution = resolution
         self.graph = graph
