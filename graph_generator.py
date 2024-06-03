@@ -5,6 +5,7 @@ import numpy as np
 import osmnx as ox
 from tqdm import tqdm
 
+import community
 from common import GraphLayer
 
 
@@ -12,6 +13,7 @@ def get_dist(du, dv) -> float:
     d = (du['x'] - dv['x']) ** 2 + (du['y'] - dv['y']) ** 2
     d = d ** 0.5 / 360 * 2 * np.pi * 6371.01 * 1000
     return d
+
 
 def extract_cluster_subgraph(graph: nx.Graph, cluster_number: int) -> nx.Graph:
     nodes_to_keep = [node for node, data in graph.nodes(data=True) if data['cluster'] == cluster_number]
@@ -41,10 +43,9 @@ def get_graph(city_id: str = 'R2555133') -> nx.Graph:
 
 
 def resolve_communities(H: nx.Graph, r: float = 20) -> list[set[int]]:
-    print('generate communities')
     communities = nx.community.louvain_communities(H,
                                                    seed=1534,
-                                                   weight='length',
+                                                   # weight='length',
                                                    resolution=r)
     # resolution - влияние на число кластеров увеличение числа и уменьшение размера при стремлении к 1
     for i, ids in enumerate(communities):
@@ -92,8 +93,8 @@ def get_cluster_to_bridge_points(H: nx.Graph) -> dict[int, list[int]]:
                 cls_to_bridge_points[c1] = set()
             if not (c2 in cls_to_bridge_points):
                 cls_to_bridge_points[c2] = set()
-            cls_to_bridge_points[c1].add(u)
-            cls_to_bridge_points[c2].add(v)
+            cls_to_bridge_points[c1].add(v)
+            cls_to_bridge_points[c2].add(u)
     return cls_to_bridge_points
 
 
@@ -126,8 +127,9 @@ def build_center_graph(
     """
     centers = {}
     X = nx.Graph()
-
-    for cls, d in tqdm(enumerate(communities), desc = 'generate centers'):  # , desc='создание центройд', total=len(communities)):
+    total = 0
+    for cls, d in tqdm(enumerate(communities),
+                       desc='generate centers'):  # , desc='создание центройд', total=len(communities)):
         gc = communities_subgraph[cls]
         if has_coordinates:
             _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
@@ -140,24 +142,32 @@ def build_center_graph(
         else:
             dist = {u: get_path_len(_p[u], cluster_to_bridge_points, cls, p) for u in _p}
 
-        min_path = 10000000
+        min_path = 100000000000
         min_node = 0
         for u in dist:
             d = dist[u]
             if d < min_path:
                 min_path = d
                 min_node = u
+        # c = nx.barycenter(gc)
+        # total+=len(c)
+        # print(len(c))
+        # min_node = c[0]
         du = graph.nodes(data=True)[min_node]
         X.add_node(min_node, **du)
         centers[cls] = min_node
-
-    for u, d in tqdm(X.nodes(data=True), desc = 'generate roads'):
+    for u, d in tqdm(X.nodes(data=True), desc="generate roads"):
         for v in cluster_to_neighboring_cluster[d['cluster']]:
-            if has_coordinates:
-                path_len = get_dist(d, X.nodes[centers[v]])
-            else:
-                path_len = nx.dijkstra_path_length(graph, u, v)
-            X.add_edge(u, centers[v], length=path_len)
+            path = nx.single_source_dijkstra(
+                graph,
+                u,
+                centers[v],
+                weight='length'
+            )
+            # if len(set([graph.nodes[q]['cluster'] for q in path[1]])) > 2:
+            #     continue
+            # print(d['cluster'], v, set([graph.nodes[q]['cluster'] for q in path[1]]))
+            X.add_edge(u, centers[v], length=path[0])
     return X
 
 
@@ -186,7 +196,11 @@ def get_node(H: nx.Graph, cls_to_center: dict, X: nx.Graph):
 
 def get_node_for_initial_graph_v2(H: nx.Graph):
     nodes = list(H.nodes())
-    return random.choice(nodes), random.choice(nodes)
+    f, t = random.choice(nodes), random.choice(nodes)
+    while f == t:
+        f, t = random.choice(nodes), random.choice(nodes)
+
+    return f, t
 
 
 def get_node_for_initial_graph(H: nx.Graph):
@@ -203,7 +217,7 @@ def get_node_for_initial_graph(H: nx.Graph):
 
 
 def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: bool = True, communities=None,
-                   has_coordinates: bool = True) -> GraphLayer:
+                   has_coordinates: bool = False) -> GraphLayer:
     if communities is None:
         communities = resolve_communities(H, resolution)
     cluster_to_neighboring_clusters = get_cluster_to_neighboring_clusters(H)
@@ -229,4 +243,112 @@ def generate_layer(H: nx.Graph, resolution: float, p: float = 1, use_all_point: 
         cluster_to_centers,
         centroids_graph
     )
+    return layer
+
+
+def var(layer: GraphLayer):
+    G = layer.graph
+    p2new_cls = {}
+    for u, du in G.nodes(data=True):
+        p2centers = set()
+
+        p2centers.add(layer.cluster_to_center[du['cluster']])
+
+        for v in G[u]:
+            dv = G.nodes[v]
+            p2centers.add(layer.cluster_to_center[dv['cluster']])
+        if len(p2centers) == 1:
+            continue
+
+        new_c = du['cluster']
+        dd = G.nodes[layer.cluster_to_center[new_c]]
+        min_dst = (du['x'] - dd['x']) ** 2 + (du['y'] - dd['y']) ** 2
+        for c in p2centers:
+            dc = G.nodes[c]
+            if new_c == dc['cluster']:
+                continue
+            dst = (du['x'] - dc['x']) ** 2 + (du['y'] - dc['y']) ** 2
+            if dst < min_dst:
+                new_c = dc['cluster']
+                min_dst = dst
+
+        if new_c != du['cluster']:
+            p2new_cls[u] = new_c
+
+    for u in p2new_cls:
+        prev = G.nodes[u]['cluster']
+        G.nodes[u]['cluster'] = p2new_cls[u]
+        if not nx.is_connected(extract_cluster_subgraph(G, prev)) or not nx.is_connected(extract_cluster_subgraph(G, p2new_cls[u])) :
+            # print('rollback', prev, p2new_cls[u])
+            G.nodes[u]['cluster'] = prev
+        else:
+           pass
+            # print('from', prev,'to',p2new_cls[u])
+    return len(p2new_cls) != 0
+
+
+def gen2(H: nx.Graph, resolution: float):
+    communities = resolve_communities(H, resolution)
+    cluster_to_neighboring_clusters = get_cluster_to_neighboring_clusters(H)
+    cluster_to_bridge_points = get_cluster_to_bridge_points(H)
+    centroids_graph = build_center_graph(
+        graph=H,
+        communities=communities,
+        communities_subgraph=generate_communities_subgraph(H, communities),
+        cluster_to_bridge_points=cluster_to_bridge_points,
+        cluster_to_neighboring_cluster=cluster_to_neighboring_clusters,
+        p=1,
+        use_all_point=True,
+        has_coordinates=True
+    )
+    cluster_to_centers = get_cluster_to_centers(centroids_graph)
+
+    layer: GraphLayer = GraphLayer(
+        H,
+        resolution,
+        communities,
+        cluster_to_neighboring_clusters,
+        cluster_to_bridge_points,
+        cluster_to_centers,
+        centroids_graph
+    )
+    count = 100
+    while (count > 0 and var(layer)):
+        print('step', count)
+        count -= 1
+        communities = {}
+        for u, d in layer.graph.nodes(data=True):
+            if d['cluster'] not in communities:
+                communities[d['cluster']] = set()
+            communities[d['cluster']].add(u)
+
+        communities = list(dict(sorted(communities.items())).values())
+
+        for g in generate_communities_subgraph(H, communities):
+            if not nx.is_connected(g):
+                print(nx.is_connected(g), [d['cluster'] for u,d in g.nodes(data=True)][0])
+
+        cluster_to_neighboring_clusters = get_cluster_to_neighboring_clusters(H)
+        cluster_to_bridge_points = get_cluster_to_bridge_points(H)
+        centroids_graph = build_center_graph(
+            graph=H,
+            communities=communities,
+            communities_subgraph=generate_communities_subgraph(H, communities),
+            cluster_to_bridge_points=cluster_to_bridge_points,
+            cluster_to_neighboring_cluster=cluster_to_neighboring_clusters,
+            p=1,
+            use_all_point=True,
+            has_coordinates=True
+        )
+        cluster_to_centers = get_cluster_to_centers(centroids_graph)
+
+        layer: GraphLayer = GraphLayer(
+            H,
+            resolution,
+            communities,
+            cluster_to_neighboring_clusters,
+            cluster_to_bridge_points,
+            cluster_to_centers,
+            centroids_graph
+        )
     return layer

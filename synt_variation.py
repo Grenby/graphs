@@ -11,8 +11,8 @@ import city_tests
 from graph_generator import get_graph, get_node_for_initial_graph
 
 if __name__ == '__main__':
-    H = get_graph('R6564910')
-    points = [get_node_for_initial_graph(H) for i in trange(30, desc='generate points')]
+    # H = get_graph('R6564910')
+    # points = [get_node_for_initial_graph(H) for i in trange(30, desc='generate points')]
     #
     # # ps = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009,
     #       0.001, 0.0011, 0.0013, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019,
@@ -53,48 +53,28 @@ if __name__ == '__main__':
     #     with open(join(my_path, name), 'rb') as f:
     #         graphs.pickle.load(f)
     #         f.close()
+
     names = [
-         './EKB1.0.pickle',
-         './EKB0.9695.pickle',
- #        './EKB0.918.pickle',
-#         './EKB0.8519.pickle',
-#          './EKB0.777.pickle',
-#          './EKB0.6939.pickle',
-#                 './EKB0.6058.pickle',
-  #               './EKB0.5109.pickle',
- #                './EKB0.4606.pickle',
-#                 './EKB0.4092.pickle',
-          #       './EKB0.357.pickle',
-         #        './EKB0.3041.pickle',
-        #       './EKB0.2513.pickle',
-  #      './EKB0.1993.pickle',
- #       './EKB0.1466.pickle',
-#        './EKB0.0961.pickle'
-    ]
-    # print(sys.argv)
-    # from_n = int(sys.argv[1])
-    # to_n = int(sys.argv[2])
-    names = [
-      'SYNT0.7006.pickle',
-      'SYNT0.2504.pickle',
-      'SYNT0.0505.pickle',
-              'SYNT0.9007.pickle',
-              'SYNT0.002.pickle',
-              'SYNT0.2004.pickle',
-              'SYNT0.4003.pickle',
-              'SYNT0.5501.pickle',
-              'SYNT0.5001.pickle',
-              'SYNT0.6502.pickle',
-              'SYNT0.7502.pickle',
-              'SYNT0.8004.pickle',
-               'SYNT0.4501.pickle',
-               'SYNT0.8504.pickle',
-                'SYNT0.1006.pickle',
-                'SYNT0.9508.pickle',
-                'SYNT0.1502.pickle',
-                'SYNT0.2999.pickle',
-                'SYNT0.6002.pickle',
-                'SYNT0.35.pickle'
+        'SYNT0.7006.pickle',
+        'SYNT0.2504.pickle',
+        'SYNT0.0505.pickle',
+        'SYNT0.9007.pickle',
+        'SYNT0.002.pickle',
+        'SYNT0.2004.pickle',
+        'SYNT0.4003.pickle',
+        'SYNT0.5501.pickle',
+        'SYNT0.5001.pickle',
+        'SYNT0.6502.pickle',
+        'SYNT0.7502.pickle',
+        'SYNT0.8004.pickle',
+        'SYNT0.4501.pickle',
+        'SYNT0.8504.pickle',
+        'SYNT0.1006.pickle',
+        'SYNT0.9508.pickle',
+        'SYNT0.1502.pickle',
+        'SYNT0.2999.pickle',
+        'SYNT0.6002.pickle',
+        'SYNT0.35.pickle'
     ]
     for name in names:
         G = None
@@ -104,4 +84,4 @@ if __name__ == '__main__':
         for e in G.edges:
             G.add_edge(e[0], e[1], length=1)
 
-        city_tests.test_graph(G, f'EKB_var_{round(betta_variation.get_density(G) * 10000) / 10000}', '0', points = points)
+        city_tests.test_graph(G, f'SYNT_var_{round(betta_variation.get_density(G) * 10000) / 10000}', '0', points=points)

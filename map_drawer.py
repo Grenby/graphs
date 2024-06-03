@@ -1,4 +1,5 @@
 import networkx as nx
+from folium import DivIcon
 from matplotlib import pyplot as plt
 import folium
 import random
@@ -92,6 +93,14 @@ def draw_on_map(_G: nx.Graph,
                 fill_color=node_colors[i] if isinstance(node_colors, list) else node_colors,
                 fill_opacity=1,
                 popup=popup_text
+            ).add_to(m)
+            folium.map.Marker(
+                [node_data['y'] , node_data['x']],
+                icon=DivIcon(
+                    icon_size=(15, 3.6),
+                    icon_anchor=(0, 0),
+                    html='<div style="font-size: 10pt">%s</div>' % str(node_data['cluster']),
+                )
             ).add_to(m)
     return m
 # radius=10,

@@ -28,7 +28,7 @@ def add_variation(H: nx.Graph, r: int) -> nx.Graph:
     points = [[d['x'], d['y']] for u, d in H.nodes(data=True)]
 
     tree = kd(points)
-    for u, du in tqdm(H.nodes(data=True), desc='variation'):
+    for u, du in H.nodes(data=True):
         dists, n_ids = tree.query([du['x'], du['y']], r)
         if type(n_ids) is np.int64:
             n_ids = [n_ids]
@@ -39,7 +39,17 @@ def add_variation(H: nx.Graph, r: int) -> nx.Graph:
             d = dists[i]
             if ids[_id] == u:
                 continue
-            _G.add_edge(u, ids[_id], length=d / 360 * 2 * np.pi * 6371.01 * 1000)
+            _G.add_edge(u, ids[_id], length=d)
+    if not nx.is_connected(_G):
+        tmp = []
+        for n in nx.connected_components(_G):
+            for q in n:
+                tmp.append(q)
+                break
+        for i in range(len(tmp) - 1):
+            d1 = _G.nodes[tmp[i]]
+            d2 = _G.nodes[tmp[i]]
+            _G.add_edge(tmp[i], tmp[i + 1], length=((d1['x'] - d2['x'])**2+(d1['y'] - d2['y'])**2)**0.5)
     return _G
 
 
