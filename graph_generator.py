@@ -127,9 +127,7 @@ def build_center_graph(
     """
     centers = {}
     X = nx.Graph()
-    total = 0
-    for cls, d in tqdm(enumerate(communities),
-                       desc='generate centers'):  # , desc='создание центройд', total=len(communities)):
+    for cls, d in enumerate(communities):  # , desc='создание центройд', total=len(communities)):
         gc = communities_subgraph[cls]
         if has_coordinates:
             _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
@@ -149,14 +147,10 @@ def build_center_graph(
             if d < min_path:
                 min_path = d
                 min_node = u
-        # c = nx.barycenter(gc)
-        # total+=len(c)
-        # print(len(c))
-        # min_node = c[0]
         du = graph.nodes(data=True)[min_node]
         X.add_node(min_node, **du)
         centers[cls] = min_node
-    for u, d in tqdm(X.nodes(data=True), desc="generate roads"):
+    for u, d in X.nodes(data=True):
         for v in cluster_to_neighboring_cluster[d['cluster']]:
             path = nx.single_source_dijkstra(
                 graph,

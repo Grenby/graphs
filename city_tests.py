@@ -1,41 +1,15 @@
-import sys
 import time
-import webbrowser
 
 import networkx as nx
 import numpy as np
-from folium import folium
-from matplotlib import pyplot as plt
 from networkx import density
 from tqdm import tqdm, trange
 
 import graph_generator
 from common import GraphLayer, CentroidResult, CityResult
-from graph_generator import generate_layer, get_graph, get_node_for_initial_graph, get_node_for_initial_graph_v2
-from map_drawer import draw_on_map
+from graph_generator import generate_layer, get_graph, get_node_for_initial_graph_v2
 from pfa import find_path
 
-import sys
-
-def get_size(obj, seen=None):
-    """Recursively finds size of objects"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if isinstance(obj, dict):
-        size += sum([get_size(v, seen) for v in obj.values()])
-        size += sum([get_size(k, seen) for k in obj.keys()])
-    elif hasattr(obj, '__dict__'):
-        size += get_size(obj.__dict__, seen)
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        size += sum([get_size(i, seen) for i in obj])
-    return size
 
 def test_layer(
         H: nx.Graph,
@@ -43,7 +17,6 @@ def test_layer(
         usual_result: list[int, list[float]],
         points: list[list[int, int]],
         layer: GraphLayer,
-        add_neighbour_cluster=True,
 ) -> CentroidResult:
     result = CentroidResult(
         resolution,
@@ -51,29 +24,10 @@ def test_layer(
         len(layer.centroids_graph.edges),
         len(layer.centroids_graph.nodes) / len(H.nodes)
     )
-    p = None
-    print('start:', len(layer.centroids_graph.nodes))
-    p = {}
-    # for n, (dst, path) in tqdm(nx.all_pairs_dijkstra(layer.graph, weight='length'), total=len(layer.graph.nodes)):
-    #     cls = layer.graph.nodes[n]['cluster']
-    #     if cls in p:
-    #         continue
-    #     p[cls] = {}
-    #     for to in path:
-    #         to_cls = layer.graph.nodes[to]['cluster']
-    #         if to_cls in p[cls]:
-    #             continue
-    #         p[cls][to_cls] = set([layer.cluster_to_center[layer.graph.nodes[u]['cluster']] for u in path[to]])
-    print(get_size(p)/1024/1024)
-    p = {du['cluster']: {dv['cluster']: set(layer.cluster_to_center[layer.graph.nodes[pp]['cluster']] for pp in nx.dijkstra_path(layer.graph, u, v, weight='length')) for v, dv in layer.centroids_graph.nodes(data=True) if v != u} for u, du in
-         tqdm(layer.centroids_graph.nodes(data=True))}
-    # N = len(p) **2
-    # total = sum([sum([len(p[u][v]) for v in p[u]]) for u in p])
-    # print(total/N)
     test_results = [0, []]
     start_time = time.time()
-    for point_from, point_to in tqdm(points):  # , desc=f'Test points {resolution}', total=len(points)):
-        test_results[1].append(test_path(layer, point_from, point_to, add_neighbour_cluster, p))
+    for point_from, point_to in points:  # , desc=f'Test points {resolution}', total=len(points)):
+        test_results[1].append(test_path(layer, point_from, point_to))
     end_time = time.time()
     test_time = end_time - start_time
 
@@ -93,18 +47,19 @@ def test_layer(
 def test_path(
         layer: GraphLayer,
         point_from: int,
-        point_to: int,
-        add_neighbour_cluster=True,
-        p=None
+        point_to: int
 ) -> float:
-    my_path = find_path(layer, point_from, point_to, add_neighbour_cluster, p)
+    try:
+        my_path = find_path(layer, point_from, point_to)
+    except Exception as e:
+        print(e)
+        return -1
     return my_path[0]
 
 
 def test_city(name: str, city_id: str) -> CityResult:
     print('start testing : ', city_id, ' ', name)
-    H = get_graph(city_id)
-    return test_graph(H, name, city_id)
+    return test_graph(get_graph(city_id), name, city_id)
 
 
 def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) -> CityResult:
@@ -118,14 +73,13 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
     resolutions += [i for i in range(500, 1000,
                                      10)]
     resolutions += [i for i in range(1000, 10000, 100)]
-
+    num_paths: int = 1000
     if points is None:
-        N: int = 1000
-        points = [get_node_for_initial_graph_v2(graph) for _ in trange(N, desc='generate points')]
+        points = [get_node_for_initial_graph_v2(graph) for _ in trange(num_paths, desc='generate points')]
     has_coords = 'x' in [d for u, d in graph.nodes(data=True)][0]
     usual_results = [0, []]
     start_time = time.time()
-    for node_from, node_to in tqdm(points, desc='usual paths'):
+    for node_from, node_to in points:
         usual_path = nx.single_source_dijkstra(graph, node_from, node_to, weight='length')
         usual_results[1].append(usual_path[0])
     end_time = time.time()
@@ -139,15 +93,13 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list = None) ->
         nodes=len(graph.nodes),
         edges=len(graph.edges)
     )
-    # resolutions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    # resolutions = [4]
 
     for r in tqdm(resolutions, desc='test resolutions:'):
         layer = generate_layer(graph, r, has_coordinates=has_coords)
-        tmp = test_layer(graph, r, usual_results, points, layer, add_neighbour_cluster=True)
+        tmp = test_layer(graph, r, usual_results, points, layer)
+        while len(tmp.errors) < num_paths // 10 * 9:
+            tmp = test_layer(graph, r, usual_results, points, layer)
         result.points_results.append(tmp)
-        if tmp.alpha > 0.5:
-            break
     result.save()
 
     return result
@@ -192,23 +144,7 @@ def test_graph_dynamic(graph: nx.Graph, name: str, city_id: str, points: list = 
     print('alpha:', a, ' resolution:', new_resolution)
 
     layer = graph_generator.generate_layer(graph, new_resolution)
-    # for cls in layer.cluster_to_bridge_points:
-    #     print('clusters:', cls, ': ', len(layer.cluster_to_bridge_points[cls]) / len(layer.communities[cls]),
-    #           'nodes:',len(layer.communities[cls]), 'neigh:', len(layer.cluster_to_bridge_points[cls]))
-    # x = [len(layer.cluster_to_bridge_points[cls]) / len(layer.communities[cls]) for cls in
-    #      layer.cluster_to_bridge_points]
-    # plt.new_figure_manager()
-    # plt.hist(x, label='Fixed: {:.4f}'.format(nx.density(graph)))
-    # plt.legend()
-    # plt.xlabel('отношение количества граничных точек кластера ко всем точкам кластера')
-    # plt.ylabel('количество кластеров')
-    # plt.savefig(f'{nx.density(graph)}.png')
-    # map: folium.Map = draw_on_map(graph, communities=layer.communities)
-    # map = draw_on_map(H, communities=communities, m=map)
-    # map = draw_on_map(P, node_colors='white', m=map)
-    # map = draw_on_map(my_P, node_colors='red', m=map)
-    # map.save("map.html")
-    # webbrowser.open("map.html")
+
 
     for i in trange(1):
         N: int = 500
