@@ -14,7 +14,10 @@ class CentroidResult:
         self.resolution: float = resolution
         self.centroid_nodes: int = centroid_nodes
         self.centroid_edges: int = centroid_edges
-        self.centroid_density: float = 2 * centroid_edges / (centroid_nodes * (centroid_nodes - 1))
+        if centroid_nodes == 1:
+            self.centroid_density = 0
+        else:
+            self.centroid_density = 2 * centroid_edges / (centroid_nodes * (centroid_nodes - 1))
         self.alpha: float = alpha
         self.speed_up: list[float] = []
         self.errors: list[float] = []
@@ -50,8 +53,8 @@ class GraphLayer:
                  graph: nx.Graph,
                  resolution: float,
                  communities: list[set[int]],
-                 cluster_to_neighboring_cluster: dict[int, list[int] | tuple[int]],
-                 cluster_to_bridge_points: dict[int, list[int] | tuple[int]],
+                 cluster_to_neighboring_cluster: dict[int, set[int]],
+                 cluster_to_bridge_points: dict[int, set[int] ],
                  cluster_to_center: dict[int, int],
                  centroids_graph: nx.Graph
                  ):

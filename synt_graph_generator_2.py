@@ -3,8 +3,6 @@ import random
 import sys
 
 import networkx as nx
-import numpy as np
-from tqdm import tqdm
 
 import betta_variation
 import city_tests
@@ -34,6 +32,7 @@ def gen(N):
                 continue
             dd = (d['x'] - t['x']) ** 2 + (d['y'] - t['y']) ** 2
             m = min(m, dd)
+    # return Q
     if m != 0:
         print('save')
         pickle.dump(Q, open('rand_points.pickle', 'wb'))
@@ -44,29 +43,13 @@ if __name__ == '__main__':
     while dens[-1] * 1.6 < 1:
         dens.append(dens[-1] * 1.3)
     dens.append(1)
-
-    # gen(2000)
-    with open('rand_points.pickle', 'rb') as f:
+    print(dens)
+    G = gen(2000)
+    with open('rand_points2000.pickle', 'rb') as f:
         G = pickle.load(f)
         f.close()
     Q = G
 
-
-    #
-    # #
-    # # #
-    # # _p: dict[int, dict[int, float]] = dict(nx.all_pairs_dijkstra_path_length(Q, weight='length'))
-    # # u = []
-    # # N = len(G.nodes)
-    # # for i in range(N):
-    # #     for j in range(i + 1, N):
-    # #         u.append((i, j))
-    # #
-    # # f = [0.0022981490745372685]
-    # # while f[-1] * 1.3< 0.5:
-    # #     f.append(f[-1] * 1.3)
-    # # f.append(1)
-    # #
     if len(sys.argv) == 1:
         number = 1
         total = 1
