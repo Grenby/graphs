@@ -56,7 +56,7 @@ def draw_few_city_result(city_result: list[CityResult]):
     axs[0].legend()
 
     axs[1].legend()
-    file_name = generate_new_name('all' + '.png', 'plots')
+    file_name = generate_new_name('all' + '.png', 'plots1')
     return plt.savefig(file_name), file_name
 
 
@@ -93,5 +93,5 @@ def draw_city_result(city_result: CityResult):
     # # x = np.linspace(0, 1, 100)
     # y = theory_func(np.array(x), *popt[0])
     # axs[0].errorbar(x, y, linewidth=3)
-    file_name = generate_new_name(city_result.name + '.png', 'plots')
+    file_name = generate_new_name(city_result.name + '.png', 'plots1')
     return plt.savefig(file_name), file_name

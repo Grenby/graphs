@@ -88,11 +88,12 @@ def generate_result(
 def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int, int]] = None,
                resolutions: list[float] = None) -> CityResult:
     print(name, nx.is_connected(graph))
-    max_alpha = 0.3
-    delta = 0.5 / 40
+    max_alpha = 1
+    delta = 1 / 80
 
     if resolutions is None:
         resolutions = []
+        resolutions += [i / 10 for i in range(1, 10, 1)]
         resolutions += [i for i in range(1, 10, 1)]
         resolutions += [i for i in range(10, 50, 2)]
         resolutions += [i for i in range(50, 100, 5)]
@@ -101,7 +102,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int,
         resolutions += [i for i in range(1000, 2000, 200)]
 
     if points is None:
-        N: int = 1000
+        N: int = 500
         points = [get_node_for_initial_graph_v2(graph) for _ in trange(N, desc='generate points')]
     else:
         N = len(points)
@@ -139,8 +140,8 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int,
         alphas.add(a)
         tmp = test_layer(points, layer)
         total = time.time() - start
-        while len(tmp[1]) < N // 10 * 9:
-            tmp = test_layer(points, layer)
+        # while len(tmp[1]) < N // 10 * 9:
+        #     tmp = test_layer(points, layer)
         text = """
             alpha:          {:4f}
             total time:     {:.3f}
@@ -149,7 +150,7 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int,
                 build_additional:       {:.3f}
                 build_centroid_graph:   {:.3f}
             pfa time:       {:.3f}
-        """.format(a,total, total - tmp[0], build_communities, build_additional, build_centroid_graph, tmp[0])
+        """.format(a, total, total - tmp[0], build_communities, build_additional, build_centroid_graph, tmp[0])
         tqdm.write(text)
         result.points_results.append(generate_result(usual_results, tmp, r, layer))
     result.save()

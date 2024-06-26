@@ -148,7 +148,7 @@ if __name__ == '__main__':
     # y = power_func(np.array(x), *popt[0])
     # axs[0].errorbar(x, y, linewidth=3)
     #
-    # file_name = generate_new_name('плотность' + '.png', 'plots')
+    # file_name = generate_new_name('плотность' + '.png', 'plots1')
     # plt.savefig(file_name)
     #
     # send_massage('плотность', file_name)
