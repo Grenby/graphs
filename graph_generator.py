@@ -134,13 +134,13 @@ def build_center_graph(
     """
     centers = {}
     X = nx.Graph()
-    for cls, _ in enumerate(communities):
+    for cls, _ in tqdm(enumerate(communities), total = len(communities)):
         gc = extract_cluster_list_subgraph(graph, [cls], communities)
         if has_coordinates:
             _p: dict[int, dict[int, float]] = {u: {v: get_dist(du, dv) for v, dv in gc.nodes(data=True)} for u, du in
                                                gc.nodes(data=True)}
         else:
-            _p: dict[int, dict[int, float]] = dict(nx.all_pairs_dijkstra_path_length(gc, weight='length'))
+            _p: dict[int, dict[int, float]] = dict(nx.all_pairs_bellman_ford_path_length(gc, weight='length'))
         if use_all_point:
             dist = {u: get_path_len(_p[u], communities[cls], p) for u in _p}
         else:
@@ -157,7 +157,7 @@ def build_center_graph(
         centers[cls] = min_node
     if len(X.nodes) == 1:
         return X
-    for u, d in X.nodes(data=True):
+    for u, d in tqdm(X.nodes(data=True)):
         for v in cluster_to_neighboring_cluster[d['cluster']]:
             if has_coordinates:
                 dv = X.nodes[centers[v]]

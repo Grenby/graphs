@@ -123,9 +123,10 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int,
 
     for r in tqdm(resolutions, desc='test resolutions:', position=2):
         start = time.time()
-        layer, build_communities, build_additional, build_centroid_graph = generate_layer(graph, r,
-                                                                                          has_coordinates=has_coords)
-        a = len(layer.communities) / len(layer.graph.nodes)
+        community = graph_generator.resolve_communities(graph, r)
+        if len(community) < 10:
+            continue
+        a = len(community) / len(graph.nodes)
         has = False
         for curr in alphas:
             if abs(curr - a) < delta:
@@ -137,6 +138,10 @@ def test_graph(graph: nx.Graph, name: str, city_id: str, points: list[tuple[int,
                 break
             else:
                 continue
+        layer, build_communities, build_additional, build_centroid_graph = generate_layer(graph, r,
+                                                                                          has_coordinates=has_coords,
+                                                                                           communities=community)
+
         alphas.add(a)
         tmp = test_layer(points, layer)
         total = time.time() - start
